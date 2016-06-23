@@ -1,5 +1,5 @@
 ﻿$botkey = "YOUR TOKEN"
-
+$timeout = 60
 $getMeLink = "https://api.telegram.org/bot$botkey/getMe"
 $sendMessageLink = "https://api.telegram.org/bot$botkey/sendMessage"
 $forwardMessageLink = "https://api.telegram.org/bot$botkey/forwardMessage"
@@ -18,7 +18,8 @@ $offset = 0
 write-host $botkey
 
 while($true) {
-	$json = Invoke-WebRequest -Uri $getUpdatesLink -Body @{offset=$offset} | ConvertFrom-Json
+	$updateparams = $getUpdatesLink + '?offset='+$offset +'&timeout=' + $timeout
+	$json = Invoke-WebRequest -Uri $updateparams | ConvertFrom-Json
 	Write-Host $json
 	Write-Host $json.ok
 	$l = $json.result.length
