@@ -1,4 +1,7 @@
-﻿$botkey = "YOUR TOKEN"
+﻿$botkey = ""
+$YOUR_CHANNEL_ID = ""
+$Channelname = ""
+$botname=""
 $timeout = 60
 $getMeLink = "https://api.telegram.org/bot$botkey/getMe"
 $sendMessageLink = "https://api.telegram.org/bot$botkey/sendMessage"
@@ -13,13 +16,14 @@ $sendChatActionLink = "https://api.telegram.org/bot$botkey/sendChatAction"
 $getUserProfilePhotosLink = "https://api.telegram.org/bot$botkey/getUserProfilePhotos"
 $getUpdatesLink = "https://api.telegram.org/bot$botkey/getUpdates"
 $setWebhookLink = "https://api.telegram.org/bot$botkey/setWebhook"
-
+$state = -1
 $offset = 0
+
 write-host $botkey
 
 while($true) {
 	$updateparams = $getUpdatesLink + '?offset='+$offset +'&timeout=' + $timeout
-	$json = Invoke-WebRequest -Uri $updateparams | ConvertFrom-Json
+	$json = Invoke-WebRequest -Uri $updateparams -UseBasicParsing | ConvertFrom-Json
 	Write-Host $json
 	Write-Host $json.ok
 	$l = $json.result.length
@@ -34,24 +38,59 @@ while($true) {
         Write-Host $txt
         if( $txt -eq '/start')
         {
-            $startmsg= $sendMessageLink + '?chat_id=' + $json.result[$i].message.chat.id + '&text=Welcome to the Dark Jokes User Submission bot. Please send us your images ;)'
-            Invoke-WebRequest -Uri $startmsg
+            $startmsg= $sendMessageLink + '?chat_id=' + $json.result[$i].message.chat.id + '&text=Welcome to the ' + $Channelname + ' User Submission bot. Please send us your images and videos ;)'
+            Invoke-WebRequest -Uri $startmsg -UseBasicParsing
         }
         else
         {
             # Image resending
             Try
             {
-              $fulllink = $sendPhotoLink + '?chat_id=YOUR CHANNEL ID&photo=' + $json.result[$i].message.photo.file_id[0]
+              $fulllink = $sendPhotoLink + '?chat_id='+ $YOUR_CHANNEL_ID +'&photo=' + $json.result[$i].message.photo.file_id[0] + '&caption=Send your own stuff at ' + $botname
               Write-Host $fulllink
-              Invoke-WebRequest -Uri $fulllink
-            
+              Invoke-WebRequest -Uri $fulllink -UseBasicParsing
+              $startmsg= $sendMessageLink + '?chat_id=' + $json.result[$i].message.chat.id + '&text=Thank you for sending the image, you can check it out at ' + $YOUR_CHANNEL_ID
+              Invoke-WebRequest -Uri $startmsg -UseBasicParsing
+              $state = 0
             }
             Catch
             {
-                $error_api= $sendMessageLink + '?chat_id=' + $json.result[$i].message.chat.id + '&text=please send a valid image...'
-                Invoke-WebRequest -Uri $error_api
+                $state = -2        
             }
+
+            if($state -le -1)
+            {
+                # Video resending
+                Try
+                {
+                  $fulllink = $sendVideoLink + '?chat_id='+ $YOUR_CHANNEL_ID +'&video=' + $json.result[$i].message.video.file_id + '&caption=Send your own stuff at ' + $botname
+                  Write-Host $fulllink
+                  Invoke-WebRequest -Uri $fulllink -UseBasicParsing
+                  $startmsg= $sendMessageLink + '?chat_id=' + $json.result[$i].message.chat.id + '&text=Thank you for sending the video, you can check it out at ' + $YOUR_CHANNEL_ID
+                  Invoke-WebRequest -Uri $startmsg -UseBasicParsing
+                  $state = 0   
+                }
+                Catch
+                {
+                    $state = -3           
+                }
+            }
+
+            if($state -le -1)
+            {
+                switch($state){
+                    -1 { $error_api= $sendMessageLink + '?chat_id=' + $json.result[$i].message.chat.id + '&text=There was an unknown error. Please try again...' }
+                    -2 { $error_api= $sendMessageLink + '?chat_id=' + $json.result[$i].message.chat.id + '&text=please send a valid image...'
+                            Write-Host $_.Exception.Message
+                            Invoke-WebRequest -Uri $error_api -UseBasicParsing
+                       }
+                    -3 {  $error_api= $sendMessageLink + '?chat_id=' + $json.result[$i].message.chat.id + '&text=please send a valid video...'
+                            Write-Host $_.Exception.Message
+                            Invoke-WebRequest -Uri $error_api -UseBasicParsing
+                       }
+                }
+            }
+                        
         }
         
 		$i++
