@@ -14,5 +14,6 @@ If you're experiencing Problems regarding ressources, just edit the timeout at t
 - Added support for videos
 - Added a response message after the file is sent
 - Added a caption to the message with the name of the bot
+
 #### Additional features
 - Channelname, ChannelID and Botname can be set at the top of the file
